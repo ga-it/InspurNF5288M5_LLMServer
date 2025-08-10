@@ -136,6 +136,16 @@ Environment for NVLink V100s (set in compose):
 - `CUDA_DEVICE_ORDER=PCI_BUS_ID`
 
 > Tip: If you scale down to **4 GPUs**, set `TENSOR_PARALLEL_SIZE=4` and reduce `SESSION_LEN` or batch size to stay within VRAM.
+---
+
+## Operational Guidance
+
+- **Long context vs throughput**: Large `SESSION_LEN` increases KV‑cache pressure. If you hit OOM or cache thrashing, lower `SESSION_LEN` first.
+- **Batching**: Increase request concurrency only after confirming single‑stream stability. Watch VRAM and throughput together.
+- **Pin the model**: Use a local `MODEL_PATH` to avoid cold‑start downloads from Hugging Face in production.
+- **Healthcheck**: The compose file includes a `/v1/models` healthcheck and a prolonged `start_period` to tolerate first‑load times on 30B.
+- **Logs**: `docker logs -f lmdeploy-server` during first load; subsequent restarts should be faster with warm caches.
+- **Upgrades**: Favor minor upgrades of LMDeploy over major PyTorch/CUDA jumps on Volta systems.
 
 ---
 # Persisting Hugging Face Models & Cache
@@ -166,16 +176,6 @@ This stack pins the Hugging Face cache and models to **host-side** directories s
 
 * Pre-stage large models into `/data/lmdeploy/models` to avoid cold-start downloads; then set `MODEL_PATH=/models/<your-model>`.
 * Keep `HF_HOME=/root/.cache/huggingface` (already set in compose) so the cache stays on the mounted host path.
----
-
-## Operational Guidance
-
-- **Long context vs throughput**: Large `SESSION_LEN` increases KV‑cache pressure. If you hit OOM or cache thrashing, lower `SESSION_LEN` first.
-- **Batching**: Increase request concurrency only after confirming single‑stream stability. Watch VRAM and throughput together.
-- **Pin the model**: Use a local `MODEL_PATH` to avoid cold‑start downloads from Hugging Face in production.
-- **Healthcheck**: The compose file includes a `/v1/models` healthcheck and a prolonged `start_period` to tolerate first‑load times on 30B.
-- **Logs**: `docker logs -f lmdeploy-server` during first load; subsequent restarts should be faster with warm caches.
-- **Upgrades**: Favor minor upgrades of LMDeploy over major PyTorch/CUDA jumps on Volta systems.
 
 ---
 # Build and Compose Commands (using `/opt/lmdeploy`)
