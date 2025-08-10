@@ -57,9 +57,7 @@ This repository provides:
 
 - `lmdeploy-v100-debian-testing-dockerfile` — base image: `nvidia/cuda:12.1.1-runtime-ubuntu22.04`, exposes **23333**, `ENTRYPOINT ["lmdeploy"]`.
 - `lmdeploy-v100-debian-testing-docker-compose.yml` — builds an **OpenAI‑compatible** API service on **port 23333**, with sensible **NCCL** and cache settings for NVLink V100.
-- `lmdeploy-v100-debian-testing.env` — sample environment configuration (**do not commit real tokens**).
-
-> **Security note:** Replace any placeholder tokens locally. **Never** commit `HUGGING_FACE_HUB_TOKEN` to a public repo.
+- `lmdeploy-v100-debian-testing.env` — sample environment configuration
 
 ---
 
