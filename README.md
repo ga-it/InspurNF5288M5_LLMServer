@@ -198,12 +198,4 @@ Environment for NVLink V100s (set in compose):
 - **Qwen** team for high‑quality 30B models with strong long‑context behavior.
 - Community efforts around keeping **sm_70** systems productive.
 
----
-
-## License
-
-Choose and add a license (MIT/Apache‑2.0/BSD‑3‑Clause).
-
----
-
-_Last updated: 2025-08-10_
+---_Last updated: 2025-08-10_
