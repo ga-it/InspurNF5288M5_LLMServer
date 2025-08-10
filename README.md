@@ -160,7 +160,7 @@ This stack pins the Hugging Face cache and models to **host-side** directories s
   sudo chown -R $USER:$USER /data/huggingface /data/lmdeploy
   ```
 
-  Then ensure your `.env` contains a valid `HUGGING_FACE_HUB_TOKEN`. Do **not** commit real tokens to Git.
+  Then ensure your `.env` contains a valid `HUGGING_FACE_HUB_TOKEN`.
 
 **Tips**
 
