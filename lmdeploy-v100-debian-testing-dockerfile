@@ -1,0 +1,57 @@
+# /opt/lmdeploy-v100-debian-testing-dockerfile-prebuilt
+# syntax=docker/dockerfile:1.4
+
+FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04 AS lmdeploy-runtime
+
+ARG PYTHON_VERSION=3.10
+
+# Install system dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    python${PYTHON_VERSION} python${PYTHON_VERSION}-dev python${PYTHON_VERSION}-venv \
+    curl wget git \
+    libgomp1 \
+    && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+
+# Create Python virtual environment
+RUN python${PYTHON_VERSION} -m venv /opt/py3
+ENV PATH=/opt/py3/bin:$PATH
+
+# Upgrade pip
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip setuptools wheel
+
+# Install PyTorch and lmdeploy
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install torch --extra-index-url https://download.pytorch.org/whl/cu121 && \
+    pip install lmdeploy
+
+# Install additional dependencies
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install \
+    transformers \
+    accelerate \
+    sentencepiece \
+    protobuf \
+    fastapi \
+    uvicorn[standard] \
+    openai \
+    pydantic \
+    tiktoken \
+    hf-transfer \
+    safetensors \
+    einops
+
+# Set environment
+ENV NCCL_LAUNCH_MODE=GROUP
+ENV TRITON_PTXAS_PATH=/usr/local/cuda/bin/ptxas
+ENV TORCH_CUDA_ARCH_LIST="7.0"
+ENV CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+
+WORKDIR /workspace
+EXPOSE 23333
+
+ENTRYPOINT ["lmdeploy"]
+CMD ["serve", "api_server", "--help"]
