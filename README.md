@@ -140,6 +140,35 @@ Environment for NVLink V100s (set in compose):
 > Tip: If you scale down to **4 GPUs**, set `TENSOR_PARALLEL_SIZE=4` and reduce `SESSION_LEN` or batch size to stay within VRAM.
 
 ---
+# Persisting Hugging Face Models & Cache
+
+This stack pins the Hugging Face cache and models to **host-side** directories so containers can be rebuilt/restarted without re-downloading:
+
+* **Host → Container mounts (from compose):**
+
+  * `/data/huggingface  →  /root/.cache/huggingface` (HF cache; controlled by `HF_HOME`)
+  * `/data/lmdeploy/cache → /root/.cache/lmdeploy` (LMDeploy runtime cache)
+  * `/data/lmdeploy/models → /models` (optional local models store)
+
+* **Env requirements (from `.env`):**
+
+  * Set `HUGGING_FACE_HUB_TOKEN=<your HF token>` to enable authenticated model pulls.
+  * Set `MODEL_PATH` to either a repo id (e.g., `Qwen/Qwen3-30B-A3B`) **or** a local path under `/models/...` once you’ve pre-staged the weights.
+
+* **First-time setup on the host:**
+
+  ```bash
+  sudo mkdir -p /data/huggingface /data/lmdeploy/cache /data/lmdeploy/models
+  sudo chown -R $USER:$USER /data/huggingface /data/lmdeploy
+  ```
+
+  Then ensure your `.env` contains a valid `HUGGING_FACE_HUB_TOKEN`. Do **not** commit real tokens to Git.
+
+**Tips**
+
+* Pre-stage large models into `/data/lmdeploy/models` to avoid cold-start downloads; then set `MODEL_PATH=/models/<your-model>`.
+* Keep `HF_HOME=/root/.cache/huggingface` (already set in compose) so the cache stays on the mounted host path.
+---
 
 ## Operational Guidance
 
