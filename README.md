@@ -151,6 +151,54 @@ Environment for NVLink V100s (set in compose):
 - **Upgrades**: Favor minor upgrades of LMDeploy over major PyTorch/CUDA jumps on Volta systems.
 
 ---
+# Build and Compose Commands (with brief explanations)
+
+## Build the image
+
+```bash
+docker build -t lmdeploy-volta \
+  -f lmdeploy-v100-debian-testing-dockerfile .
+```
+
+* **What it does:** Builds the runtime image from your Dockerfile and tags it `lmdeploy-volta`.
+* **When to use:** First setup or after any Dockerfile changes.
+
+## Start the service (compose up)
+
+```bash
+docker compose \
+  -f lmdeploy-v100-debian-testing-docker-compose.yml \
+  --env-file .env \
+  up -d --build
+```
+
+* **What it does:** Builds the service if needed and starts it in the background.
+* **Why `--env-file`:** Injects model/path/tuning settings from `.env`.
+* **Why `--build`:** Ensures changes to compose or env that affect the image are picked up.
+
+## Stop and remove (compose down)
+
+```bash
+docker compose \
+  -f lmdeploy-v100-debian-testing-docker-compose.yml \
+  down
+```
+
+* **What it does:** Stops and removes the containers and network created by this compose file.
+* **Use when:** You want a clean stop without touching any bind-mounted data.
+
+### Optional cleanups
+
+```bash
+# Remove containers + network + named volumes created by this compose stack
+docker compose -f lmdeploy-v100-debian-testing-docker-compose.yml down -v
+
+# If you’ve changed service names and want to clear strays
+docker compose -f lmdeploy-v100-debian-testing-docker-compose.yml down --remove-orphans
+```
+
+* **Caution on `-v`:** Deletes **named volumes**. If you used bind mounts to host paths (e.g., `/data/...`), those files remain; named volumes will be erased.
+---
 
 ## Troubleshooting
 
