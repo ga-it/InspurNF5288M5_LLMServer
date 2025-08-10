@@ -151,53 +151,55 @@ Environment for NVLink V100s (set in compose):
 - **Upgrades**: Favor minor upgrades of LMDeploy over major PyTorch/CUDA jumps on Volta systems.
 
 ---
-# Build and Compose Commands (with brief explanations)
+# Build and Compose Commands (using `/opt/lmdeploy`)
 
 ## Build the image
 
 ```bash
 docker build -t lmdeploy-volta \
-  -f lmdeploy-v100-debian-testing-dockerfile .
+  -f /opt/lmdeploy/lmdeploy-v100-debian-testing-dockerfile \
+  /opt/lmdeploy
 ```
 
-* **What it does:** Builds the runtime image from your Dockerfile and tags it `lmdeploy-volta`.
-* **When to use:** First setup or after any Dockerfile changes.
+* **What it does:** Builds from the Dockerfile at `/opt/lmdeploy/...dockerfile` with build context `/opt/lmdeploy`, tagging the image `lmdeploy-volta`.
+* **Use when:** First setup or after Dockerfile/base image changes.
 
 ## Start the service (compose up)
 
 ```bash
 docker compose \
-  -f lmdeploy-v100-debian-testing-docker-compose.yml \
-  --env-file .env \
+  -f /opt/lmdeploy/lmdeploy-v100-debian-testing-docker-compose.yml \
+  --env-file /opt/lmdeploy/lmdeploy-v100-debian-testing.env \
   up -d --build
 ```
 
-* **What it does:** Builds the service if needed and starts it in the background.
-* **Why `--env-file`:** Injects model/path/tuning settings from `.env`.
-* **Why `--build`:** Ensures changes to compose or env that affect the image are picked up.
+* **What it does:** Builds if needed and starts the stack in the background.
+* **Why `--env-file`:** Injects model/cache/tuning from your `/opt/lmdeploy/...env`.
+* **Why `--build`:** Ensures image is rebuilt if anything changed.
 
 ## Stop and remove (compose down)
 
 ```bash
 docker compose \
-  -f lmdeploy-v100-debian-testing-docker-compose.yml \
+  -f /opt/lmdeploy/lmdeploy-v100-debian-testing-docker-compose.yml \
   down
 ```
 
-* **What it does:** Stops and removes the containers and network created by this compose file.
-* **Use when:** You want a clean stop without touching any bind-mounted data.
+* **What it does:** Stops and removes containers and the compose network.
+* **Use when:** You want a clean stop without deleting host bind-mounted data.
 
 ### Optional cleanups
 
 ```bash
-# Remove containers + network + named volumes created by this compose stack
-docker compose -f lmdeploy-v100-debian-testing-docker-compose.yml down -v
+# Also remove named volumes created by this stack
+docker compose -f /opt/lmdeploy/lmdeploy-v100-debian-testing-docker-compose.yml down -v
 
-# If you’ve changed service names and want to clear strays
-docker compose -f lmdeploy-v100-debian-testing-docker-compose.yml down --remove-orphans
+# Clean up any orphaned containers if service names changed
+docker compose -f /opt/lmdeploy/lmdeploy-v100-debian-testing-docker-compose.yml down --remove-orphans
 ```
 
-* **Caution on `-v`:** Deletes **named volumes**. If you used bind mounts to host paths (e.g., `/data/...`), those files remain; named volumes will be erased.
+* **Caution on `-v`:** Deletes **named volumes**; bind-mounted host paths (e.g., under `/data`) are not touched.
+
 ---
 
 ## Troubleshooting
