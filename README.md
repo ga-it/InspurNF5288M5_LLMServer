@@ -77,11 +77,11 @@ This repository provides:
 
 2. **Clone your repo and prepare env**
    ```bash
-   git clone <your-repo-url> lmdeploy-volta
-   cd lmdeploy-volta
+   git clone ga-it/InspurNF5288M5_LLMServer InternLM/lmdeploy
+   cd /opt
 
    # Copy the sample env and edit values
-   cp lmdeploy-v100-debian-testing.env .env
+   cp InspurNF5288M5_LLMServer/lmdeploy* /opt/
 
    # IMPORTANT: set your token & model path
    # HUGGING_FACE_HUB_TOKEN=<your-token>
@@ -97,7 +97,7 @@ This repository provides:
 
 4. **Build & run**
    ```bash
-   docker compose -f lmdeploy-v100-debian-testing-docker-compose.yml --env-file .env up -d --build
+   docker compose -f /opt/lmdeploy-v100-debian-testing-docker-compose.yml --env-file /opt/lmdeploy-v100-debian-testing.env up -d --build
    docker logs -f lmdeploy-server  # watch first load
    ```
 
