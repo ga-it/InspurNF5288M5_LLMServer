@@ -1,0 +1,102 @@
+# /opt/lmdeploy-v100-debian-testing-docker-compose.yml
+# Optimised for 8x NVIDIA V100 32GB with lmdeploy OpenAI-compatible API
+services:
+  lmdeploy:
+    dns:
+      - 192.168.0.65
+      - 8.8.8.8
+      - 8.8.4.4
+    build:
+      context: /opt
+      dockerfile: /opt/lmdeploy-v100-debian-testing-dockerfile-prebuilt
+      target: lmdeploy-runtime
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        CUDA_VERSION: "12.1.1"
+        TORCH_CUDA_ARCH_LIST: "7.0"
+        CMAKE_BUILD_PARALLEL_LEVEL: "12"
+        MAX_JOBS: "8"
+        NVCC_THREADS: "4"
+    image: lmdeploy/lmdeploy-openai:cu121-sm70
+    container_name: lmdeploy-server
+    runtime: nvidia
+    shm_size: "32g"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    ports:
+      - "23333:23333"
+    environment:
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+      HF_HOME: /root/.cache/huggingface
+      TOKENIZERS_PARALLELISM: "false"
+      HF_HUB_ENABLE_HF_TRANSFER: "0"
+      HF_HUB_DISABLE_EXPERIMENTAL_WARNING: "1"
+      NVIDIA_VISIBLE_DEVICES: "all"
+      CUDA_VISIBLE_DEVICES: "0,1,2,3,4,5,6,7"
+      CUDA_DEVICE_ORDER: "PCI_BUS_ID"
+      CUDA_LAUNCH_BLOCKING: "0"
+      NCCL_DEBUG: "WARN"
+      NCCL_P2P_DISABLE: "0"
+      NCCL_P2P_LEVEL: "NVL"
+      NCCL_IB_DISABLE: "1"
+      NCCL_TREE_THRESHOLD: "0"
+      NCCL_NET_GDR_LEVEL: "NVL"
+      NCCL_LAUNCH_MODE: "GROUP"
+      OMP_NUM_THREADS: "4"
+      LMDEPLOY_USE_MODELSCOPE: "0"
+      PYTORCH_CUDA_ALLOC_CONF: "max_split_size_mb:512"
+      MODEL_PATH: ${MODEL_PATH:-Qwen/Qwen3-30B-A3B}
+      TRITON_PTXAS_PATH: /usr/local/cuda/bin/ptxas
+    volumes:
+      - /data/huggingface:/root/.cache/huggingface
+      - /data/lmdeploy/cache:/root/.cache/lmdeploy
+      - /data/lmdeploy/models:/models
+      - /tmp:/tmp
+    command:
+      - serve
+      - api_server
+      - ${MODEL_PATH:-/models/Qwen3-30B}
+      - --server-port
+      - "23333"
+      - --server-name
+      - "0.0.0.0"
+      - --tp
+      - "${TENSOR_PARALLEL_SIZE:-8}"  # Back to 8 for 30B model
+      - --cache-max-entry-count
+      - "${CACHE_MAX_ENTRY:-0.8}"  # Slightly reduced for larger model
+      - --session-len
+      - "${SESSION_LEN:-38912}"  # Reduced for memory efficiency
+      - --max-batch-size
+      - "${MAX_BATCH_SIZE:-16}"  # Conservative for 30B model
+      - --backend
+      - turbomind
+      - --model-format
+      - hf
+      - --quant-policy
+      - "${QUANT_POLICY:-0}"
+      - --rope-scaling-factor
+      - "1.0"
+      - --log-level
+      - INFO
+      - --enable-prefix-caching  # Add this for efficiency
+      - --cache-block-seq-len
+      - "128"  # Optimise block size for long contexts
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 8
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:23333/v1/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 600s  # Extended for larger model loading
+
+networks:
+  default:
+    driver: bridge
